@@ -7,7 +7,7 @@ import { Configuration, OpenAIApi } from "openai-edge";
 // dotenv.config({ path: "../api/.env.local" }); // Adjust the path as needed
 
 
-const key = "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"
+const key = process.env.NEXT_PUBLIC_OPENAI_API_KEY;
 const configuration = new Configuration({
   apiKey: key
 });
@@ -33,7 +33,7 @@ export default async function handler(req, res) {
 
     Write a list of pre-conditions: List conditions required for the scenario
 
-    Acceptance Criteria: Write a detailed list of acceptance criteria, be as detailed and as accurate as possible.
+    Write a list of Acceptance Criteria: Write the acceptance criteria and be as detailed and as accurate as possible. Take into account visuals, text, call to action, icons and other features.
   
     Write a list of analytics: list ideas what can be tracked for analytics
 

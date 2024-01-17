@@ -10,7 +10,6 @@ import ResponseField from "@/components/Response/ResponseField";
 import CopyButton from "@/components/UI/CopyButton";
 import Loader from "@/components/UI/Loader";
 
-
 export default function Home() {
   const [textAreaValue, setTextAreauValue] = useState();
   const [responeValue, setResponseValue] = useState();
@@ -20,9 +19,8 @@ export default function Home() {
   const [uploadedImageUrls, setUploadedImageUrls] = useState();
   const [accumulatedWords, setAccumulatedWords] = useState("");
 
-  const [response, setResponse] = useState('')
-  const [generating, setGenerating] = useState(false) 
-
+  const [response, setResponse] = useState("");
+  const [generating, setGenerating] = useState(false);
 
   const [textToCopy, setTextToCopy] = useState("");
 
@@ -110,13 +108,11 @@ export default function Home() {
     }
   };
 
-
-
   const handleClick = async () => {
     setIsLoading(true);
     setResponseValue("");
     const uploadedImageUrl = await handleImageUpload();
-   
+
     // Make a POST call to our api route
     await fetch("/api/generate-story", {
       method: "POST",
@@ -127,23 +123,23 @@ export default function Home() {
         imageUrl: uploadedImageUrl,
         input: textAreaValue,
       }),
-    }).then(async (response)=>{
+    }).then(async (response) => {
       const reader = response.body?.getReader();
-      while(true){
-        const {done, value} = await reader?.read();
-        if(done){
+      while (true) {
+        const { done, value } = await reader?.read();
+        if (done) {
           break;
         }
 
         var currentChunk = new TextDecoder().decode(value);
         setResponseValue((prev) => prev + currentChunk);
       }
-    })
+    });
 
     setIsLoading(false);
     deleteFileFromS3(image[0].path);
   };
-  
+
   const deleteFileFromS3 = async (fileName) => {
     const params = {
       Bucket:
@@ -191,27 +187,34 @@ export default function Home() {
           </div>
           <div class="bg-gradient-to-r from-fuchsia-200 via-violet-200 to-violet-300 min-h-screen p-5">
             <div className="magicOuter relative shadow-sm border-slate-100 h-full bg-white rounded-lg flex flex-col justify-between items-center">
-              {!responeValue && !isLoading && (
+              {!responeValue && (
                 <div className="flex items-center justify-center h-full">
-                  <svg
-                    class="h-12 w-12 text-stone-400"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"
-                    />
-                  </svg>
-                  <p className="text-stone-400">Wait for the magic...</p>
+                 
+
+                  {isLoading ? (
+                    <Loader />
+                  ) : (
+                    <>
+                      <svg
+                      class="h-12 w-12 text-stone-400"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"
+                      />
+                    </svg>
+                      
+                      <p className="text-stone-400">Wait for the magic...</p>
+                    </>
+                  )}
                 </div>
               )}
-              {isLoading && (
-                <Loader/>
-              )}
+
               {responeValue && (
                 <>
                   <div id="textToCopy" className="htmlContent p-5">
@@ -219,8 +222,10 @@ export default function Home() {
                   </div>
                 </>
               )}
-              <CopyButton onClick={handleCopyText} className="absolute top-2 right-2" />
-
+              <CopyButton
+                onClick={handleCopyText}
+                className="absolute top-2 right-2"
+              />
             </div>
           </div>
         </div>
