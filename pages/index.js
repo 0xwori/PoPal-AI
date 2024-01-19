@@ -161,7 +161,7 @@ export default function Home() {
         <div className="grid grid-cols-2 gap-4 ">
           <div className="imageDrop h-full p-10">
             <h1 class="mb-4 text-3xl font-extrabold leading-none tracking-tight text-gray-900">
-              ✨ PO-Pal AI!
+              ✨ PO-Pal.ai
             </h1>
             <DropZone sendImageData={handlePassedImage} />
             {error && <p>{error}</p>}
@@ -218,7 +218,9 @@ export default function Home() {
               {responeValue && (
                 <>
                   <div id="textToCopy" className="htmlContent p-5">
+                    <div class="relative w-full md:max-w-screen-md lg:max-w-screen-lg xl:max-w-screen-xl">
                     {htmlReactParser(cleanResponse(responeValue))}
+                    </div>
                   </div>
                 </>
               )}
