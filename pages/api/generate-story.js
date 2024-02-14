@@ -23,8 +23,9 @@ export default async function handler(req, res) {
   console.log("Input: " + input);
   console.log(imageUrl);
 
+
   const goldenUserStory = `
-    Based on this image/screenshot, generate a user story following the below format and output should be embedded in html tags beginning with <div> tag ${
+    Based on this image/screenshot, generate a user story following the below format.  ${
       input && "context of this screenshot is" + input
     }
     Write User story in format: As a ..., I want ..., so that ...
@@ -45,8 +46,9 @@ export default async function handler(req, res) {
         model: "gpt-4-vision-preview",
         max_tokens: 1000,
         stream: true,
+        temperature: 0.7, // Controls the randomness of the response
         messages: [
-          {role: "system", content: "You are a product manager."},
+          {role: "system", content: "You are a senior Product Manager, who write the best User Stories and designed to output in HTML format, starting with <div> tag."},
           {
             role: "user",
             content: [

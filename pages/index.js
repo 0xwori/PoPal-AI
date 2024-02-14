@@ -9,6 +9,7 @@ import AWS, { ControlTower } from "aws-sdk";
 import ResponseField from "@/components/Response/ResponseField";
 import CopyButton from "@/components/UI/CopyButton";
 import Loader from "@/components/UI/Loader";
+import StoryGenerator from "@/components/UI/StoryGenerator";
 
 export default function Home() {
   const [textAreaValue, setTextAreauValue] = useState();
@@ -44,12 +45,7 @@ export default function Home() {
     selection.removeAllRanges();
   };
 
-  const cleanResponse = (response) => {
-    const cleanedResponse = response.replace(/```html|```/g, ""); // Remove ```html and ``` code blocks
-    const doc = new DOMParser().parseFromString(cleanedResponse, "text/html");
-    const bodyContent = doc.body.innerHTML; // Extract content from body
-    return bodyContent;
-  };
+
 
   const accessKeyId = process.env.NEXT_PUBLIC_ACCESS_KEY_ID;
   const secretAccessKey = process.env.NEXT_PUBLIC_SECRET_ACCESS_KEY;
@@ -161,15 +157,20 @@ export default function Home() {
         <div className="grid grid-cols-2 gap-4 ">
           <div className="imageDrop h-full p-10">
             <h1 class="mb-4 text-3xl font-extrabold leading-none tracking-tight text-gray-900">
-              ✨ PO-Pal.ai
+              Input
             </h1>
+            <h2 class="mb-4 text-xl font-medium leading-none tracking-tight text-gray-900">
+              Upload a design screenshot
+            </h2>
             <DropZone sendImageData={handlePassedImage} />
             {error && <p>{error}</p>}
             <label
               for="message"
               class="block mb-2 text-sm font-medium text-gray-900 "
             >
-              Add some context
+              <h2 class="mb-4 text-xl font-medium leading-none tracking-tight text-gray-900">
+                Type in some content
+              </h2>
             </label>
             <textarea
               id="message"
@@ -219,7 +220,9 @@ export default function Home() {
                 <>
                   <div id="textToCopy" className="htmlContent p-5">
                     <div class="relative w-full md:max-w-screen-md lg:max-w-screen-lg xl:max-w-screen-xl">
-                    {htmlReactParser(cleanResponse(responeValue))}
+                      <div>
+                        <StoryGenerator initialMarkdown={responeValue}/>
+                      </div>
                     </div>
                   </div>
                 </>
