@@ -11,6 +11,7 @@ const Reviewer = () => {
   const [error, setError] = useState("");
   const [valueWithNumbers, setValueWithNumbers] = useState("");
   const [feedbackList, setFeedbackList] = useState([]);
+  const [chunkedResponse, setChunkedResponseValue] = useState();
   const [isLoading, setIsloading] = useState(false);
   const [clickedButton, setClickedButton] = useState(null);
 
@@ -19,34 +20,54 @@ const Reviewer = () => {
     setClickedButton(type);
     if (value) {
       setError("");
-
       try {
-        const requestFeedback = await fetch("/api/feedback", {
+        const response = await fetch("/api/feedback", {
           method: "POST",
-          headers: { "Content-type": "application/json" },
+          headers: {
+            "Content-type": "application/json",
+          },
           body: JSON.stringify({
             content: type,
             input: valueWithNumbers,
           }),
         });
-        if (requestFeedback.ok) {
-          const responseData = await requestFeedback.json();
-          console.log("Request happend", responseData);
-          setFeedbackList((prevFeedbackList) => [
+  
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+  
+        const reader = response.body?.getReader();
+        let concatenatedChunks = '';
+        while (true) {
+          const { done, value } = await reader?.read();
+          if (done) {
+            break;
+          }
+  
+          const currentChunk = new TextDecoder().decode(value);
+          concatenatedChunks += currentChunk;
+  
+          // Update the appropriate feedback type
+          setFeedbackList((prevFeedbackList) => ({
             ...prevFeedbackList,
-            responseData,
-          ]);
-          setIsloading(false);
+            [type]: prevFeedbackList[type] + currentChunk,
+          }));
         }
       } catch (error) {
-        console.log(error);
+        console.error("Error fetching feedback:", error);
+        setError("Error fetching feedback. Please try again.");
+      } finally {
+        setIsloading(false);
       }
     } else {
-      setIsloading(false)
+      setIsloading(false);
       setClickedButton("");
       setError("Field cannot be empty");
     }
   };
+  
+  
+  
 
   const handleSubmit = async (inputText) => {
     try {
@@ -75,6 +96,8 @@ const Reviewer = () => {
     // Implement logic to decline improvement for this line
     console.log(`Declined improvement for line ${line}`);
   };
+
+  console.log(feedbackList)
 
   return (
     <div class="min-h-screen flex flex-col h-screen">
@@ -105,13 +128,16 @@ const Reviewer = () => {
                     </Button>
                   </div>
 
-                  {[...feedbackList].reverse().map((feedback, index) => (
-                    <FeedbackCard
-                      key={index}
-                      type={feedback.content}
-                      content={feedback.answer}
-                    />
-                  ))}
+                  { 
+                  <FeedbackCard
+                    key={clickedButton}
+                    type={clickedButton}
+                    content={feedbackList[clickedButton]}
+                  />
+                  
+                  }
+
+
                 </div>
               </div>
             </section>
@@ -154,15 +180,6 @@ const Reviewer = () => {
                   </div>
                 )}
               </div>
-
-              {/* <TextInput onSubmit={handleSubmit} />
-            {feedback.length > 0 && (
-              <Feedback
-                feedback={feedback}
-                onAccept={handleAccept}
-                onDecline={handleDecline}
-              />
-            )} */}
             </div>
           </div>
         </nav>

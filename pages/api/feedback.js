@@ -1,12 +1,21 @@
 const { OpenAI } = require("openai");
+import { OpenAIStream, StreamingTextResponse } from "ai";
+import { Configuration, OpenAIApi } from "openai-edge";
+// dotenv.config({ path: "../api/.env.local" }); // Adjust the path as needed
+
 
 const key = process.env.NEXT_PUBLIC_OPENAI_API_KEY;
-const openai = new OpenAI({
-  apiKey: key,
+const configuration = new Configuration({
+  apiKey: key
 });
+const openai = new OpenAIApi(configuration);
+
+
+export const runtime = 'edge'; 
 
 export default async function handler(req, res) {
-  const { content, input } = req.body;
+  console.log(req)
+  const { content, input } = await req.json();
   console.log(content);
   console.log(input);
 
@@ -39,12 +48,15 @@ export default async function handler(req, res) {
   }
 
   if (content && input) {
-    const completion = await openai.chat.completions.create({
-      temperature: 0.7,
-      messages: [
+
+    const response = await openai.createChatCompletion({
+      model: "gpt-4-turbo-preview",
+      stream: true,
+      temperature: 0.7, // Controls the randomness of the response
+      messages:  [
         {
           role: "system",
-          content: `You are a helpful ${object["type"]} that gives feedback on User Stories and designed to output in Markdown format.`,
+          content: `You are a helpful ${object["type"]} that gives feedback on User Stories and designed to output in html format and begin with <div> tag.`,
         },
         {
           role: "system",
@@ -55,11 +67,32 @@ export default async function handler(req, res) {
           content: `${object["user-prompt"]} This is my User Story: ${input}` 
         },
       ],
-      model: "gpt-4-turbo-preview",
-    });
+    }, { responseType: "stream" });
+    
+    const stream = OpenAIStream(response);
+    return new StreamingTextResponse(stream);
 
-    const answer = completion.choices[0].message.content;
+    // const completion = await openai.chat.completions.create({
+    //   temperature: 0.7,
+    //   messages: [
+    //     {
+    //       role: "system",
+    //       content: `You are a helpful ${object["type"]} that gives feedback on User Stories and designed to output in Markdown format.`,
+    //     },
+    //     {
+    //       role: "system",
+    //       content: object["system-prompt"],
+    //     },
+    //     { 
+    //       role: "user", 
+    //       content: `${object["user-prompt"]} This is my User Story: ${input}` 
+    //     },
+    //   ],
+    //   model: "gpt-4-turbo-preview",
+    // });
 
-    res.status(200).json({ content: object["type"], answer });
+    // const answer = completion.choices[0].message.content;
+
+    // res.status(200).json({ content: object["type"], answer });
   }
 }
