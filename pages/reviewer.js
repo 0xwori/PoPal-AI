@@ -105,8 +105,9 @@ const Reviewer = () => {
                     </Button>
                   </div>
 
-                  {[...feedbackList].reverse().map((feedback) => (
+                  {[...feedbackList].reverse().map((feedback, index) => (
                     <FeedbackCard
+                      key={index}
                       type={feedback.content}
                       content={feedback.answer}
                     />
