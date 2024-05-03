@@ -10,6 +10,8 @@ import ResponseField from "@/components/Response/ResponseField";
 import CopyButton from "@/components/UI/CopyButton";
 import Loader from "@/components/UI/Loader";
 import StoryGenerator from "@/components/UI/StoryGenerator";
+import UserStoryInput from "@/components/Inputs/UserStoryInput";
+import ErrorToast from "@/components/UI/ErrorToast";
 
 export default function Home() {
   const [textAreaValue, setTextAreauValue] = useState();
@@ -17,6 +19,8 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState();
   const [image, setImage] = useState();
+  const [userStory, setUserStory] = useState({});
+
   const [uploadedImageUrls, setUploadedImageUrls] = useState();
   const [accumulatedWords, setAccumulatedWords] = useState("");
 
@@ -45,7 +49,11 @@ export default function Home() {
     selection.removeAllRanges();
   };
 
+  const handleUserStoryChange = (updatedUserStory) => {
+    setUserStory(updatedUserStory);
+  };
 
+  console.log(error);
 
   const accessKeyId = process.env.NEXT_PUBLIC_ACCESS_KEY_ID;
   const secretAccessKey = process.env.NEXT_PUBLIC_SECRET_ACCESS_KEY;
@@ -69,7 +77,7 @@ export default function Home() {
 
   const handleImageUpload = async () => {
     console.log(image);
-    if (image.length) {
+    if (image) {
       setError("");
       const uploadedImageUrls = []; // To store uploaded image URLs
 
@@ -103,37 +111,76 @@ export default function Home() {
       setError("Please upload an image");
     }
   };
+  
 
   const handleClick = async () => {
-    setIsLoading(true);
-    setResponseValue("");
-    const uploadedImageUrl = await handleImageUpload();
 
-    // Make a POST call to our api route
-    await fetch("/api/generate-story", {
-      method: "POST",
-      headers: {
-        "Content-type": "application/json",
-      },
-      body: JSON.stringify({
-        imageUrl: uploadedImageUrl,
-        input: textAreaValue,
-      }),
-    }).then(async (response) => {
-      const reader = response.body?.getReader();
-      while (true) {
-        const { done, value } = await reader?.read();
-        if (done) {
-          break;
+    //  CHECK errror handling
+    console.log(userStory.asA)
+    if (!userStory.asA || !userStory.iWant || !userStory.soThat && !textAreaValue && !image) {
+      setError("You need to input at least one");
+      return;
+    } else{
+      setError("");
+    }
+
+    if (!error) {
+      setIsLoading(true);
+      setResponseValue("");
+
+      if(image){
+        const uploadedImageUrl = await handleImageUpload();
+    
+        // Make a POST call to our api route
+        await fetch("/api/generate-story", {
+          method: "POST",
+          headers: {
+            "Content-type": "application/json",
+          },
+          body: JSON.stringify({
+            imageUrl: uploadedImageUrl,
+            input: textAreaValue,
+          }),
+        }).then(async (response) => {
+          const reader = response.body?.getReader();
+          while (true) {
+            const { done, value } = await reader?.read();
+            if (done) {
+              break;
+            }
+
+            var currentChunk = new TextDecoder().decode(value);
+            setResponseValue((prev) => prev + currentChunk);
+          }
+        });
+        deleteFileFromS3(image[0].path);
+      } else if(userStory.asA || userStory.iWant || userStory.soThat){
+          try {
+          const res = await fetch('/api/generate-story-textual', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ userStory: userStory, input: textAreaValue }),
+          });
+    
+          if (!res.ok) {
+            throw new Error('Failed to fetch response from server');
+          }
+    
+          const data = await res.json();
+          setResponseValue(data);
+        } catch (error) {
+          console.error(error);
         }
 
-        var currentChunk = new TextDecoder().decode(value);
-        setResponseValue((prev) => prev + currentChunk);
+      } else if (textAreaValue){
+        console.log("triggeredn from text area vlue ")
       }
-    });
+      setIsLoading(false);
+    }
 
-    setIsLoading(false);
-    deleteFileFromS3(image[0].path);
+    
   };
 
   const deleteFileFromS3 = async (fileName) => {
@@ -159,11 +206,11 @@ export default function Home() {
             <h1 class="mb-4 text-3xl font-extrabold leading-none tracking-tight text-gray-900">
               Input
             </h1>
+            <UserStoryInput onChange={handleUserStoryChange} />
             <h2 class="mb-4 text-xl font-medium leading-none tracking-tight text-gray-900">
               Upload a design screenshot
             </h2>
             <DropZone sendImageData={handlePassedImage} />
-            {error && <p>{error}</p>}
             <label
               for="message"
               class="block mb-2 text-sm font-medium text-gray-900 "
@@ -190,26 +237,24 @@ export default function Home() {
             <div className="magicOuter relative shadow-sm border-slate-100 h-full bg-white rounded-lg flex flex-col justify-between items-center">
               {!responeValue && (
                 <div className="flex items-center justify-center h-full">
-                 
-
                   {isLoading ? (
                     <Loader />
                   ) : (
                     <>
                       <svg
-                      class="h-12 w-12 text-stone-400"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="2"
-                        d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"
-                      />
-                    </svg>
-                      
+                        class="h-12 w-12 text-stone-400"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"
+                        />
+                      </svg>
+
                       <p className="text-stone-400">Wait for the magic...</p>
                     </>
                   )}
@@ -221,7 +266,7 @@ export default function Home() {
                   <div id="textToCopy" className="htmlContent p-5">
                     <div class="relative w-full md:max-w-screen-md lg:max-w-screen-lg xl:max-w-screen-xl">
                       <div>
-                        <StoryGenerator initialMarkdown={responeValue}/>
+                        <StoryGenerator initialMarkdown={responeValue} />
                       </div>
                     </div>
                   </div>
@@ -235,6 +280,7 @@ export default function Home() {
           </div>
         </div>
       </section>
+      {error && <ErrorToast errorMessage={error} />}
     </main>
   );
 }

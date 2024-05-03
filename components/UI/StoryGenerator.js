@@ -15,6 +15,9 @@ const StoryGenerator = ({ initialMarkdown }) => {
 //     return bodyContent;
 //   };
 
+console.log(typeof initialMarkdown);
+console.log(initialMarkdown);
+
   return (
     <div className="markdown-content">{htmlReactParser(initialMarkdown)}</div>
   );
