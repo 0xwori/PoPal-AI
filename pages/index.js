@@ -114,23 +114,22 @@ export default function Home() {
   
 
   const handleClick = async () => {
-
-    //  CHECK errror handling
-    console.log(userStory.asA)
-    if (!userStory.asA || !userStory.iWant || !userStory.soThat && !textAreaValue && !image) {
+    //  CHECK error handling
+    console.log(userStory.asA);
+    if ((!userStory.asA || !userStory.iWant || !userStory.soThat) && !textAreaValue && !image) {
       setError("You need to input at least one");
       return;
-    } else{
+    } else {
       setError("");
     }
-
+  
     if (!error) {
       setIsLoading(true);
       setResponseValue("");
-
-      if(image){
+  
+      if (image) {
         const uploadedImageUrl = await handleImageUpload();
-    
+  
         // Make a POST call to our api route
         await fetch("/api/generate-story", {
           method: "POST",
@@ -148,40 +147,57 @@ export default function Home() {
             if (done) {
               break;
             }
-
+  
             var currentChunk = new TextDecoder().decode(value);
             setResponseValue((prev) => prev + currentChunk);
           }
         });
         deleteFileFromS3(image[0].path);
-      } else if(userStory.asA || userStory.iWant || userStory.soThat){
-          try {
-          const res = await fetch('/api/generate-story-textual', {
-            method: 'POST',
+      } else if (userStory.asA || userStory.iWant || userStory.soThat) {
+        try {
+          const requestBody = { userStory: userStory, input: textAreaValue };
+          // const res = await fetch("/api/generate-story-textual", {
+          //   method: "POST",
+          //   headers: {
+          //     "Content-Type": "application/json",
+          //     "Keep-Alive": "timeout=5",
+          //     "Connection": "keep-alive",
+          //   },
+          //   body: JSON.stringify(requestBody),
+          // });
+          await fetch("/api/generate-story-textual", {
+            method: "POST",
             headers: {
-              'Content-Type': 'application/json',
+              "Content-type": "application/json",
             },
-            body: JSON.stringify({ userStory: userStory, input: textAreaValue }),
+            body: JSON.stringify({
+              userStory: requestBody.userStory,
+              input: requestBody.input
+            }),
+          }).then(async (response) => {
+            const reader = response.body?.getReader();
+            while (true) {
+              const { done, value } = await reader?.read();
+              if (done) {
+                break;
+              }
+    
+              var currentChunk = new TextDecoder().decode(value);
+              setResponseValue((prev) => prev + currentChunk);
+            }
           });
-    
-          if (!res.ok) {
-            throw new Error('Failed to fetch response from server');
-          }
-    
-          const data = await res.json();
-          setResponseValue(data);
+  
         } catch (error) {
-          console.error(error);
+          console.error('Client-side error:', error);
+          setError(error.message);
         }
-
-      } else if (textAreaValue){
-        console.log("triggeredn from text area vlue ")
+      } else if (textAreaValue) {
+        console.log("triggered from text area value ");
       }
       setIsLoading(false);
     }
-
-    
   };
+  
 
   const deleteFileFromS3 = async (fileName) => {
     const params = {
